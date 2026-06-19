@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>赌场掷骰子</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #1a0f0a;
+            color: #fff;
+        }
+
+        .table {
+            width: 90vw;
+            max-width: 700px;
+            height: 70vh;
+            max-height: 500px;
+            background: radial-gradient(ellipse at center, #2d8a4e 0%, #1e6b3a 40%, #155a2e 80%, #0d4422 100%);
+            border-radius: 200px / 160px;
+            border: 18px solid #5c3a1e;
+            box-shadow:
+                inset 0 0 60px rgba(0,0,0,0.3),
+                inset 0 0 120px rgba(0,0,0,0.1),
+                0 10px 40px rgba(0,0,0,0.6),
+                0 0 0 6px #3d2510,
+                0 0 0 10px #2a1a0c;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .table::before {
+            content: '';
+            position: absolute;
+            inset: 8px;
+            border: 2px solid rgba(255,215,0,0.3);
+            border-radius: 180px / 140px;
+            pointer-events: none;
+        }
+
+        .dice-area {
+            display: flex;
+            gap: 5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .dice-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .dice-wrapper {
+            width: 100px;
+            height: 100px;
+            perspective: 800px;
+        }
+
+        .cube {
+            width: 100px;
+            height: 100px;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(-25deg) rotateY(25deg);
+        }
+
+        .face {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border-radius: 10px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            padding: 14px;
+            backface-visibility: visible;
+        }
+
+        .face-1 {
+            transform: translateZ(50px);
+            background: linear-gradient(135deg, #fff 0%, #f0f0f0 100%);
+            border: 2px solid #ccc;
+        }
+        .face-6 {
+            transform: rotateY(180deg) translateZ(50px);
+            background: linear-gradient(135deg, #e8e8e8 0%, #d5d5d5 100%);
+            border: 2px solid #bbb;
+        }
+        .face-4 {
+            transform: rotateY(90deg) translateZ(50px);
+            background: linear-gradient(135deg, #f5f5f5 0%, #e2e2e2 100%);
+            border: 2px solid #c0c0c0;
+        }
+        .face-3 {
+            transform: rotateY(-90deg) translateZ(50px);
+            background: linear-gradient(135deg, #f8f8f8 0%, #e5e5e5 100%);
+            border: 2px solid #c5c5c5;
+        }
+        .face-2 {
+            transform: rotateX(90deg) translateZ(50px);
+            background: linear-gradient(135deg, #fafafa 0%, #eaeaea 100%);
+            border: 2px solid #c8c8c8;
+        }
+        .face-5 {
+            transform: rotateX(-90deg) translateZ(50px);
+            background: linear-gradient(135deg, #ececec 0%, #dadada 100%);
+            border: 2px solid #bbb;
+        }
+
+        .dot {
+            width: 16px;
+            height: 16px;
+            background: radial-gradient(circle at 30% 30%, #d32f2f, #6b1010);
+            border-radius: 50%;
+            align-self: center;
+            justify-self: center;
+            box-shadow:
+                inset 0 2px 4px rgba(0,0,0,0.5),
+                0 1px 2px rgba(0,0,0,0.3);
+        }
+        .dot.hidden { visibility: hidden; }
+
+        .dice-shadow {
+            width: 70px;
+            height: 14px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 50%;
+            filter: blur(4px);
+            margin-top: 10px;
+            transition: transform 0.1s, opacity 0.1s;
+        }
+
+        .total {
+            font-size: 1.5rem;
+            min-height: 2rem;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .btn-area { margin-top: 1.5rem; }
+        button {
+            padding: 0.8rem 2.5rem;
+            font-size: 1.1rem;
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #8b0000, #b22222);
+            color: #ffd700;
+            cursor: pointer;
+            font-weight: bold;
+            letter-spacing: 2px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+        button:active { transform: scale(0.95); }
+        button:hover { box-shadow: 0 6px 25px rgba(139,0,0,0.6); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .table-label {
+            position: absolute;
+            top: 20px;
+            font-size: 0.9rem;
+            color: rgba(255,215,0,0.4);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="table">
+        <span class="table-label">CASINO ROYALE</span>
+        <div class="dice-area">
+            <div class="dice-col">
+                <div class="dice-wrapper">
+                    <div class="cube" id="cube1"></div>
+                </div>
+                <div class="dice-shadow" id="shadow1"></div>
+            </div>
+            <div class="dice-col">
+                <div class="dice-wrapper">
+                    <div class="cube" id="cube2"></div>
+                </div>
+                <div class="dice-shadow" id="shadow2"></div>
+            </div>
+        </div>
+        <div class="total" id="total"></div>
+        <div class="btn-area">
+            <button id="btn" onclick="roll()">掷骰子</button>
+        </div>
+    </div>
+
+    <script>
+        const dotPatterns = {
+            1: [0,0,0, 0,1,0, 0,0,0],
+            2: [0,0,1, 0,0,0, 1,0,0],
+            3: [0,0,1, 0,1,0, 1,0,0],
+            4: [1,0,1, 0,0,0, 1,0,1],
+            5: [1,0,1, 0,1,0, 1,0,1],
+            6: [1,0,1, 1,0,1, 1,0,1]
+        };
+
+        // face-1前 face-6后 face-4右 face-3左 face-2上 face-5下
+        // 要让某个数字朝向观察者（前方），对应旋转
+        const faceRotations = {
+            1: { x: 0, y: 0, z: 0 },
+            2: { x: -90, y: 0, z: 0 },
+            3: { x: 0, y: 90, z: 0 },
+            4: { x: 0, y: -90, z: 0 },
+            5: { x: 90, y: 0, z: 0 },
+            6: { x: 180, y: 0, z: 0 }
+        };
+
+        function buildFace(num) {
+            return dotPatterns[num].map(d =>
+                `<span class="dot ${d ? '' : 'hidden'}"></span>`
+            ).join('');
+        }
+
+        function buildCube(el) {
+            const order = [1, 6, 4, 3, 2, 5];
+            el.innerHTML = order.map(n =>
+                `<div class="face face-${n}">${buildFace(n)}</div>`
+            ).join('');
+        }
+
+        const cube1 = document.getElementById('cube1');
+        const cube2 = document.getElementById('cube2');
+        buildCube(cube1);
+        buildCube(cube2);
+
+        function setCubeTransform(cube, rx, ry, rz, ty) {
+            cube.style.transform = `translateY(${ty}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg)`;
+        }
+
+        // 初始展示角度
+        setCubeTransform(cube1, -25, 25, 0, 0);
+        setCubeTransform(cube2, -25, 25, 0, 0);
+
+        // 弹跳物理模拟
+        function bouncePath(t) {
+            // t: 0~1 归一化时间
+            // 返回 0~1 归一化 Y 位置 (0=地面, 1=最高)
+            if (t < 0.3) {
+                // 下落阶段 (从高处到地面)
+                const p = t / 0.3;
+                return 1 - p * p;
+            } else if (t < 0.5) {
+                // 第一次弹起
+                const p = (t - 0.3) / 0.2;
+                const h = 0.35;
+                return h * Math.sin(p * Math.PI);
+            } else if (t < 0.65) {
+                // 第二次弹起
+                const p = (t - 0.5) / 0.15;
+                const h = 0.15;
+                return h * Math.sin(p * Math.PI);
+            } else if (t < 0.78) {
+                // 第三次弹起
+                const p = (t - 0.65) / 0.13;
+                const h = 0.06;
+                return h * Math.sin(p * Math.PI);
+            } else {
+                return 0;
+            }
+        }
+
+        // 旋转速度衰减
+        function rotationEase(t) {
+            // 开始快，后面慢
+            if (t < 0.3) return t / 0.3;
+            return 1 - Math.pow(1 - t, 3) * 0.1 + 0.9 * (t - 0.3) / 0.7 + 0.3 / 0.3 * 0.1;
+        }
+
+        function animateDice(cube, shadow, duration, totalRotX, totalRotY, totalRotZ, finalValue, onDone) {
+            const startTime = performance.now();
+            const dropHeight = 180; // px
+
+            const finalRot = faceRotations[finalValue];
+            // 确保最终旋转匹配目标面，加上整圈数
+            const baseSpinsX = Math.floor(totalRotX / 360) * 360;
+            const baseSpinsY = Math.floor(totalRotY / 360) * 360;
+            const endRx = baseSpinsX + finalRot.x;
+            const endRy = baseSpinsY + finalRot.y;
+            const endRz = totalRotZ;
+
+            function frame(now) {
+                const elapsed = now - startTime;
+                let t = Math.min(elapsed / duration, 1);
+
+                // Y 位置（弹跳）
+                const bounceY = bouncePath(t);
+                const ty = -bounceY * dropHeight;
+
+                // 旋转：用 easeOut 衰减
+                const rotProgress = 1 - Math.pow(1 - t, 2.5);
+                const rx = endRx * rotProgress;
+                const ry = endRy * rotProgress;
+                const rz = endRz * rotProgress;
+
+                setCubeTransform(cube, rx, ry, rz, ty);
+
+                // 阴影跟随弹跳
+                const shadowScale = bounceY > 0.01 ? 0.3 + 0.7 * (1 - bounceY) : 1;
+                const shadowOpacity = bounceY > 0.01 ? 0.1 + 0.2 * (1 - bounceY) : 0.3;
+                shadow.style.transform = `scale(${shadowScale})`;
+                shadow.style.opacity = shadowOpacity;
+
+                if (t < 1) {
+                    requestAnimationFrame(frame);
+                } else {
+                    // 最终精确定位
+                    setCubeTransform(cube, finalRot.x, finalRot.y, finalRot.z || 0, 0);
+                    shadow.style.transform = 'scale(1)';
+                    shadow.style.opacity = '0.3';
+                    if (onDone) onDone();
+                }
+            }
+
+            requestAnimationFrame(frame);
+        }
+
+        let rolling = false;
+
+        function roll() {
+            if (rolling) return;
+            rolling = true;
+            const btn = document.getElementById('btn');
+            btn.disabled = true;
+            document.getElementById('total').textContent = '';
+
+            const shadow1 = document.getElementById('shadow1');
+            const shadow2 = document.getElementById('shadow2');
+
+            const v1 = Math.floor(Math.random() * 6) + 1;
+            const v2 = Math.floor(Math.random() * 6) + 1;
+
+            let done1 = false, done2 = false;
+            function checkDone() {
+                if (done1 && done2) {
+                    document.getElementById('total').textContent = `${v1} + ${v2} = ${v1 + v2}`;
+                    btn.disabled = false;
+                    rolling = false;
+                }
+            }
+
+            // 骰子1：较快
+            animateDice(
+                cube1, shadow1,
+                1800,
+                720 + Math.random() * 360,
+                540 + Math.random() * 360,
+                180 + Math.random() * 90,
+                v1,
+                () => { done1 = true; checkDone(); }
+            );
+
+            // 骰子2：稍慢 + 延迟
+            setTimeout(() => {
+                animateDice(
+                    cube2, shadow2,
+                    2000,
+                    680 + Math.random() * 360,
+                    500 + Math.random() * 360,
+                    160 + Math.random() * 90,
+                    v2,
+                    () => { done2 = true; checkDone(); }
+                );
+            }, 100);
+        }
+    </script>
+</body>
+</html>
